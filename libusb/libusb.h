@@ -1234,81 +1234,11 @@ static inline void libusb_set_iso_packet_lengths(
 		transfer->iso_packet_desc[i].length = length;
 }
 
-/** \ingroup asyncio
- * Convenience function to locate the position of an isochronous packet
- * within the buffer of an isochronous transfer.
- *
- * This is a thorough function which loops through all preceding packets,
- * accumulating their lengths to find the position of the specified packet.
- * Typically you will assign equal lengths to each packet in the transfer,
- * and hence the above method is sub-optimal. You may wish to use
- * libusb_get_iso_packet_buffer_simple() instead.
- *
- * \param transfer a transfer
- * \param packet the packet to return the address of
- * \returns the base address of the packet buffer inside the transfer buffer,
- * or NULL if the packet does not exist.
- * \see libusb_get_iso_packet_buffer_simple()
- */
-static inline unsigned char *libusb_get_iso_packet_buffer(
-	struct libusb_transfer *transfer, unsigned int packet)
-{
-	int i;
-	size_t offset = 0;
-	int _packet;
+unsigned char * LIBUSB_CALL libusb_get_iso_packet_buffer(
+	struct libusb_transfer *transfer, unsigned int packet);
 
-	/* oops..slight bug in the API. packet is an unsigned int, but we use
-	 * signed integers almost everywhere else. range-check and convert to
-	 * signed to avoid compiler warnings. FIXME for libusb-2. */
-	if (packet > INT_MAX)
-		return NULL;
-	_packet = packet;
-
-	if (_packet >= transfer->num_iso_packets)
-		return NULL;
-
-	for (i = 0; i < _packet; i++)
-		offset += transfer->iso_packet_desc[i].length;
-
-	return transfer->buffer + offset;
-}
-
-/** \ingroup asyncio
- * Convenience function to locate the position of an isochronous packet
- * within the buffer of an isochronous transfer, for transfers where each
- * packet is of identical size.
- *
- * This function relies on the assumption that every packet within the transfer
- * is of identical size to the first packet. Calculating the location of
- * the packet buffer is then just a simple calculation:
- * <tt>buffer + (packet_size * packet)</tt>
- *
- * Do not use this function on transfers other than those that have identical
- * packet lengths for each packet.
- *
- * \param transfer a transfer
- * \param packet the packet to return the address of
- * \returns the base address of the packet buffer inside the transfer buffer,
- * or NULL if the packet does not exist.
- * \see libusb_get_iso_packet_buffer()
- */
-static inline unsigned char *libusb_get_iso_packet_buffer_simple(
-	struct libusb_transfer *transfer, unsigned int packet)
-{
-	int _packet;
-
-	/* oops..slight bug in the API. packet is an unsigned int, but we use
-	 * signed integers almost everywhere else. range-check and convert to
-	 * signed to avoid compiler warnings. FIXME for libusb-2. */
-	if (packet > INT_MAX)
-		return NULL;
-	_packet = packet;
-
-	if (_packet >= transfer->num_iso_packets)
-		return NULL;
-
-	return transfer->buffer + (transfer->iso_packet_desc[0].length * _packet);
-}
+unsigned char * LIBUSB_CALL libusb_get_iso_packet_buffer_simple(
+	struct libusb_transfer *transfer, unsigned int packet);
 
 /* sync I/O */
 
