@@ -212,13 +212,13 @@ static int check_usb_vfs(const char *dirname)
 
 static const char *find_usbfs_path(void)
 {
-	const char *path = "/proc/bus/usb";
+	const char *path = "/dev/bus/usb";
 	const char *ret = NULL;
 
 	if (check_usb_vfs(path)) {
 		ret = path;
 	} else {
-		path = "/dev/bus/usb";
+		path = "/proc/bus/usb";
 		if (check_usb_vfs(path))
 			ret = path;
 	}
@@ -1211,38 +1211,6 @@ static int op_get_device_list(struct libusb_context *ctx,
 		return usbfs_get_device_list(ctx, _discdevs);
 }
 
-/* Returns the file descriptor of 'file_name', if it has been opened by the process, or -1 otherwise. */
-static int find_fd_by_name(char *file_name)
-{
-	struct dirent *fd_dirent;
-	DIR *proc_fd = opendir("/proc/self/fd");
-	int ret = -1;
-
-	while (fd_dirent = readdir(proc_fd))
-	{
-		char link_file_name[1024];
-		char fd_file_name[1024];
-
-		if (fd_dirent->d_type != DT_LNK)
-		{
-			continue;
-		}
-
-		snprintf(link_file_name, 1024, "/proc/self/fd/%s", fd_dirent->d_name);
-
-		memset(fd_file_name, 0, sizeof(fd_file_name));
-		readlink(link_file_name, fd_file_name, sizeof(fd_file_name) - 1);
-
-		if (!strcmp(fd_file_name, file_name))
-		{
-			ret = atoi(fd_dirent->d_name);
-		}
-	}
-
-	closedir(proc_fd);
-
-	return ret;
-}
 static int op_open(struct libusb_device_handle *handle)
 {
 	struct linux_device_handle_priv *hpriv = _device_handle_priv(handle);
@@ -1250,15 +1218,7 @@ static int op_open(struct libusb_device_handle *handle)
 
 	_get_usbfs_path(handle->dev, filename);
 	usbi_dbg("opening %s", filename);
-
-	hpriv->fd = find_fd_by_name(filename);
-
-	/* Fallback to normal behavior */
-	if (hpriv->fd == -1)
-	{
-		hpriv->fd = open(filename, O_RDWR);
-	}
-
+	hpriv->fd = open(filename, O_RDWR);
 	if (hpriv->fd < 0) {
 		if (errno == EACCES) {
 			usbi_err(HANDLE_CTX(handle), "libusb couldn't open USB device %s: "
